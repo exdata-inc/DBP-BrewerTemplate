@@ -116,11 +116,22 @@ fn brewing_data_sample(
 
 
 async fn process_demand(json_ld: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let loaded_json_ld: serde_json::Map<String, serde_json::Value> = load_json_ld(json_ld, 6, false).await
+    let loaded_json_ld: serde_json::Map<String, serde_json::Value> = if json_ld.starts_with("http") {
+        load_json_ld(json_ld, 6, false).await
         .unwrap_or_else(|e| {
             eprintln!("Failed to load JSON-LD: {}", e);
             std::process::exit(1);
-        });
+        })
+    } else {
+        let mut loaded_json_ld = serde_json::from_str::<serde_json::Map<String, Value>>(json_ld)
+        .map_err(|e| { 
+            eprintln!("Failed to parse JSON-LD: {}", e);
+            Box::<dyn std::error::Error>::from(e)
+        })?;
+        scan_json_ld_obj(&mut loaded_json_ld, 6, false).await; // Call here for non-http case
+        loaded_json_ld
+    };
+    
     info!(
         "{} Scanned Message: {:?}",
         DBP_RWD_BREWING_DEMAND, loaded_json_ld
