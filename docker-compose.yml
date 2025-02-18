@@ -1,6 +1,0 @@
-services:
-  rust-app:
-    build: .
-    volumes:
-      - ./src:/app/src
-    working_dir: /app
